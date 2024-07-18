@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup
-from TraitementChaineCara import rreplace
 import requests
 import mysql.connector
 from mysql.connector import errorcode

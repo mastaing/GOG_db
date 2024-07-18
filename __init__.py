@@ -12,7 +12,7 @@ def get_max_page(url)-> int:
     page = requests.get(url)
     soup = BeautifulSoup(page.text,'html.parser')
     element = soup.select_one('#Catalog > div > div.catalog__display-wrapper.catalog__grid-wrapper > div > small-pagination > div > button:nth-child(4) > span')
-    return element.text
+    return int(element.text)
 
 def get_link(url:str,max_page:int)->list:
     """
