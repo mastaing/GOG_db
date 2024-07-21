@@ -58,8 +58,22 @@ for link in range(len(li_game_link)) :
     element = soup.select_one('.table__row-content > a:nth-child(2)')
     print(element.text)
 
-    element = soup.select_one('.table__row-content > a:nth-child(3)')
-    print(element.text)    
+    elements = soup.select('.details__languages-row--language-name')
+    print([element.get_text(strip=True) for element in elements])    
+
+    element = soup.select_one('')
+    print(element.text)
+
+    css_selectors = {
+        'base_price' : '.product-actions-price__base-amount',
+        'game_price' : '.product-actions-price__final-amount',
+        'rating' : '.productcard-rating--inline',
+        'genre' : ['.table__row-content > a:nth-child(1)','.table__row-content > a:nth-child(2)','.table__row-content > a:nth-child(3)'],
+        'language' : '.details__languages-row--language-name',
+        'time_to_beat' : '.howlongtobeat-box__time',
+        'date' : '.table__row-content > span',
+        'title' : '.productcard-basics__title'
+        } 
 """
         # Récupére le Prix de base du jeu : NOT NULL
     game_dict['base_price'] = 0
