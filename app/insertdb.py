@@ -1,6 +1,3 @@
-
-
-
 # Connection a la DATABASE
 
 DB_NAME = 'gog_database'
