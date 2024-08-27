@@ -41,8 +41,6 @@ def get_link(url:str,max_page:int)->list:
                 url_list.append(link.get('href'))
     return url_list
 
-
-
 def get_game_info(url:str,balise_class:str):
     """
         Fonction pour scraper des informations depuis un url d'un site avec la classe de la balise rechercher et de la fonction select_one de BeautifulSoup.
@@ -61,7 +59,7 @@ def get_game_info(url:str,balise_class:str):
 
 def get_game_info_list(url:str,balise_class:str)->list:
     """
-        Fonction pour scraper des informations depuis un url d'un site avec la classe de la balise rechercher et de la fonction select_one de BeautifulSoup.
+        Fonction pour scraper des informations depuis un url d'un site avec la classe de la balise rechercher et de la fonction select de BeautifulSoup.
 
     Args:
         url (str):URL du site que l'on va scraper les informations.
@@ -89,26 +87,48 @@ def create_games_dictionary(url_list:list,selector_dict:dict)->dict:
     for index in range(len(url_list)) :
         url = url_list[index]
         temp_dict = {}
-        
-        temp_dict['base_price'] = get_game_info(url, selector_dict['base_price'])
-        temp_dict['game_price'] = get_game_info(url, selector_dict['game_price'])
+
+        page = requests.get(url, RandomAgent())
+        soup = BeautifulSoup(page.text,'html.parser')
+
+        element = soup.select_one(selector_dict['base_price'])
+        temp_dict['base_price'] =  element.text.strip().replace('\n','') if element else None
+        #temp_dict['base_price'] = get_game_info(url, selector_dict['base_price'])
+
+        element = soup.select_one(selector_dict['game_price'])
+        temp_dict['game_price'] =  element.text.strip().replace('\n','') if element else None
+        #temp_dict['game_price'] = get_game_info(url, selector_dict['game_price'])
 
         if temp_dict['base_price'] != temp_dict['game_price'] :
-            try:
-                temp_dict['reduction'] = round(100 - ((float(temp_dict['game_price']) * 100) / float(temp_dict['base_price'])))
-            except:
-                temp_dict['reduction'] = None
-        else:
-            temp_dict['reduction'] = None
+            try: temp_dict['reduction'] = round(100 - ((float(temp_dict['game_price']) * 100) / float(temp_dict['base_price'])))
+            except: temp_dict['reduction'] = None
+        else: temp_dict['reduction'] = None
 
-        temp_dict['rating'] = get_game_info(url, selector_dict['rating'])
-        temp_dict['genre'] = [get_game_info(url, selector_dict['genre'][0]), get_game_info(url, selector_dict['genre'][1]), get_game_info(url, selector_dict['genre'][2])]
-        temp_dict['language'] = get_game_info_list(url, selector_dict['language'])
-        temp_dict['time_to_beat'] = get_game_info(url, selector_dict['time_to_beat'])
-        temp_dict['date'] = get_game_info(url, selector_dict['date'])
-        games_dict[get_game_info(url, selector_dict['title'])] = temp_dict
+        element = soup.select_one(selector_dict['rating'])
+        temp_dict['rating'] = element.text.strip().replace('\n','')[0:3] if element else None
+        #temp_dict['rating'] = get_game_info(url, selector_dict['rating'])
+
+        temp_li = []
+        element = soup.select_one(selector_dict['genre'][0])
+        temp_li.append(element.text.strip().replace('\n','') if element else None)
+
+        element = soup.select_one(selector_dict['genre'][1])
+        temp_li.append(element.text.strip().replace('\n','') if element else None)
+
+        element = soup.select_one(selector_dict['genre'][2])
+        temp_li.append(element.text.strip().replace('\n','') if element else None)
+        temp_dict['genre'] = temp_li
+        #temp_dict['genre'] = [get_game_info(url, selector_dict['genre'][0]), get_game_info(url, selector_dict['genre'][1]), get_game_info(url, selector_dict['genre'][2])]
+        
+        temp_dict['language'] = get_game_info_list(url, selector_dict['language'])[0:3]
+        
+        element = soup.select_one(selector_dict['time_to_beat'])
+        temp_dict['time_to_beat'] =  element.text.strip().replace('\n','').replace(' h','') if element else None
+        #temp_dict['time_to_beat'] = get_game_info(url, selector_dict['time_to_beat']).replace(" h",'')
+        
+        element = soup.select_one(selector_dict['title'])
+        games_dict[element.text.strip().replace('\n','') if element else None] = temp_dict
     return games_dict
-
 
 def create_database(cursor,DB_NAME):
     """fonction pour crée une base de donnée mysql
@@ -201,13 +221,13 @@ def insert_data(DB_NAME:str,games_dict:dict):
 
     except mysql.connector.Error as err:
         if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
-            print("Something is wrong with your user name or password")
+            print("Mauvais mots de passe ou nom d'utilisateur")
         elif err.errno == errorcode.ER_BAD_DB_ERROR:
-            print("Database does not exist")
+            print("la base de donnée n'existe pas")
         else:
             print(err)
 
-    mycursor = mydb.cursor()
+    mycursor = mydb.cursor(buffered=True)
     for game, values in games_dict.items():
         name = game
         base_price = values["base_price"]
@@ -215,21 +235,19 @@ def insert_data(DB_NAME:str,games_dict:dict):
         discount = values["reduction"]
         rating = values["rating"]
         time_to_beat = values["time_to_beat"]
-        release_date = values["date"]
 
         # Insertion ou mise à jour dans la table "games"
         sql = """
-        INSERT INTO games (name, base_price, game_price, discount, rating, time_to_beat, release_date)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO games (name, base_price, game_price, discount, rating, time_to_beat)
+        VALUES (%s, %s, %s, %s, %s, %s)
         ON DUPLICATE KEY UPDATE
         base_price = VALUES(base_price), 
         game_price = VALUES(game_price),
         discount = VALUES(discount), 
         rating = VALUES(rating),
-        time_to_beat = VALUES(time_to_beat),
-        release_date = VALUES(release_date)
+        time_to_beat = VALUES(time_to_beat)
         """
-        val = (name, base_price, game_price, discount, rating, time_to_beat, release_date)
+        val = (name, base_price, game_price, discount, rating, time_to_beat)
         mycursor.execute(sql, val)
         mydb.commit()
 
@@ -289,5 +307,3 @@ def insert_data(DB_NAME:str,games_dict:dict):
             mydb.commit()
 
     mycursor.close()
-
-    

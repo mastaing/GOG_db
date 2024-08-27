@@ -8,11 +8,10 @@ TABLES['games'] = (
     " `id` INT NOT NULL AUTO_INCREMENT,"
     " `name` VARCHAR(255) NOT NULL,"
     " `base_price` DECIMAL(5,2) NULL,"
-    " `game_price` DECIMAL(5,2) NOT NULL,"
+    " `game_price` DECIMAL(5,2) NULL,"
     " `discount` VARCHAR(10) NULL,"
-    " `rating` DECIMAL(2,1) NOT NULL,"
-    " `time_to_beat` DECIMAL(5,2) NOT NULL,"
-    " `release_date` DATE NOT NULL,"
+    " `rating` DECIMAL(2,1) NULL,"
+    " `time_to_beat` DECIMAL(5,2) NULL,"
     " PRIMARY KEY (`id`)"
     ") ENGINE=InnoDB"
 )
@@ -72,7 +71,7 @@ TABLES['games_languages'] = (
     ") ENGINE=InnoDB"
 )
 
-#create_tables(DB_NAME,TABLES)
+create_tables(DB_NAME,TABLES)
 
 css_selectors = {
     'base_price' : '.product-actions-price__base-amount',
@@ -81,9 +80,7 @@ css_selectors = {
     'genre' : ['.table__row-content > a:nth-child(1)','.table__row-content > a:nth-child(2)','.table__row-content > a:nth-child(3)'],
     'language' : '.details__languages-row--language-name',
     'time_to_beat' : '.howlongtobeat-box__time',
-    'date' : '.table__row-content > span',
     'title' : '.productcard-basics__title'
     }
-
-
+                     
 insert_data(DB_NAME,create_games_dictionary(get_link("https://www.gog.com/fr/games",1),css_selectors))
